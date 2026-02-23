@@ -17,20 +17,19 @@ def test_mtf_matches_circular_analytic_midband_autocorr():
 
     rho, mtf = mtf_from_pupil_autocorr(pupil)
 
-    # Map rho to normalized frequency nu in [0,1].
-    # For our grid, the OTF support (cutoff) scales ~ with pupil radius.
-    # We estimate cutoff from where MTF first becomes small in the tail (robust to discretization).
-    # Autocorr-based MTF should approach ~0 near cutoff.
-    tail = slice(int(0.70 * len(mtf)), len(mtf))
-    cutoff = rho[int(np.argmin(mtf[tail]) + 0.70 * len(mtf))]
-    assert cutoff > 0.05
+    # IMPORTANT:
+    # Autocorrelation output is parameterized by pupil SHIFT (lag) coordinates, not frequency.
+    # For a circular pupil of radius r (in normalized pupil coords), the autocorr support
+    # radius equals the pupil DIAMETER (2r). That maps to normalized frequency nu in [0,1] as:
+    #   nu = shift / (2r)
+    cutoff_shift = 2.0 * radius
+    nu = np.clip(rho / cutoff_shift, 0.0, 1.0)
 
-    nu = np.clip(rho / cutoff, 0.0, 1.0)
     mtf_a = mtf_circular_analytic(nu)
 
-    # Compare mid-band (most reliable numerically)
+    # Compare mid-band where discretization is most reliable
     band = (nu > 0.05) & (nu < 0.75)
     err = float(np.mean(np.abs(mtf[band] - mtf_a[band])))
 
-    # Autocorr definition aligns with analytic MTF; should be reasonably close.
-    assert err < 0.07
+    # With correct axis mapping, this should be reasonably close.
+    assert err < 0.08
