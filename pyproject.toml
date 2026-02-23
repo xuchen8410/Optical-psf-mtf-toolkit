@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "optical-psf-mtf-toolkit"
+version = "0.1.0"
+description = "Fourier optics PSF/MTF toolkit with pytest verification"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.23",
+  "matplotlib>=3.7",
+]
+
+[tool.setuptools]
+packages = ["optics"]
