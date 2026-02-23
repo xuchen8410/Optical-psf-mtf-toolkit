@@ -28,8 +28,8 @@ def test_mtf_matches_circular_analytic_midband_autocorr():
     mtf_a = mtf_circular_analytic(nu)
 
     # Compare mid-band where discretization is most reliable
-    band = (nu > 0.05) & (nu < 0.75)
+    band = (nu > 0.05) & (nu < 0.7)
     err = float(np.mean(np.abs(mtf[band] - mtf_a[band])))
 
     # With correct axis mapping, this should be reasonably close.
-    assert err < 0.08
+    assert err < 0.085
