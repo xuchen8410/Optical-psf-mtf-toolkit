@@ -52,3 +52,38 @@ def mtf_radial(psf: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
     rho_bins = (np.arange(nbins) + 0.5) * rho_max / nbins
     return rho_bins, mtf_r
+
+
+def mtf_from_pupil_autocorr(pupil_amp: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Compute radial MTF via pupil intensity autocorrelation (definition-consistent with analytic circular MTF).
+    For a clear circular pupil with uniform amplitude, this aligns well with the closed-form MTF.
+
+    pupil_amp: real amplitude mask (0..1)
+    Returns (rho_bins, mtf_radial) on the same rho definition used in mtf_radial().
+    """
+    # Use pupil intensity (incoherent OTF depends on pupil intensity autocorrelation)
+    P = pupil_amp.astype(np.float64)
+    # Autocorrelation via Fourier domain: autocorr = IFFT(|FFT(P)|^2)
+    A = _ifft2c(np.abs(_fft2c(P)) ** 2).real
+    # Normalize OTF peak to 1
+    A /= (A[A.shape[0] // 2, A.shape[1] // 2] + 1e-15)
+
+    # Radial average of A (this is MTF for a real, symmetric pupil)
+    n = P.shape[0]
+    y, x = np.indices((n, n))
+    xn = (x - n / 2) / n
+    yn = (y - n / 2) / n
+    rho = np.sqrt(xn**2 + yn**2)
+
+    nbins = n // 2
+    rho_max = 0.5 * np.sqrt(2)
+    rbin = np.floor(rho * nbins / rho_max).astype(int)
+    rbin = np.clip(rbin, 0, nbins - 1)
+
+    sums = np.bincount(rbin.ravel(), weights=A.ravel(), minlength=nbins)
+    counts = np.bincount(rbin.ravel(), minlength=nbins)
+    mtf_r = sums / np.maximum(counts, 1)
+
+    rho_bins = (np.arange(nbins) + 0.5) * rho_max / nbins
+    return rho_bins, mtf_r
